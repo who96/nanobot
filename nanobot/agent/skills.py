@@ -53,7 +53,10 @@ class SkillsLoader:
 
         # Filter by requirements
         if filter_unavailable:
-            return [s for s in skills if self._check_requirements(self._get_skill_meta(s["name"]))]
+            return [
+                s for s in skills
+                if self._is_skill_enabled(s["name"]) and self._check_requirements(self._get_skill_meta(s["name"]))
+            ]
         return skills
 
     def load_skill(self, name: str) -> str | None:
@@ -121,7 +124,8 @@ class SkillsLoader:
             path = s["path"]
             desc = escape_xml(self._get_skill_description(s["name"]))
             skill_meta = self._get_skill_meta(s["name"])
-            available = self._check_requirements(skill_meta)
+            enabled = self._is_skill_enabled(s["name"])
+            available = enabled and self._check_requirements(skill_meta)
 
             lines.append(f"  <skill available=\"{str(available).lower()}\">")
             lines.append(f"    <name>{name}</name>")
@@ -130,6 +134,8 @@ class SkillsLoader:
 
             # Show missing requirements for unavailable skills
             if not available:
+                if not enabled:
+                    lines.append("    <disabled/>")
                 missing = self._get_missing_requirements(skill_meta)
                 if missing:
                     lines.append(f"    <requires>{escape_xml(missing)}</requires>")
@@ -184,6 +190,12 @@ class SkillsLoader:
             if not os.environ.get(env):
                 return False
         return True
+
+    def _is_skill_enabled(self, name: str) -> bool:
+        """Check if a skill is enabled (defaults to True for backward compat)."""
+        meta = self.get_skill_metadata(name) or {}
+        enabled = meta.get("enabled", "true")
+        return str(enabled).lower().strip() != "false"
 
     def _get_skill_meta(self, name: str) -> dict:
         """Get nanobot metadata for a skill (cached in frontmatter)."""
