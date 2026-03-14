@@ -47,7 +47,8 @@ class ContextBuilder:
             parts.append(f"""# Skills
 
 The following skills extend your capabilities. To use a skill, read its SKILL.md file using the read_file tool.
-Skills with available="false" need dependencies installed first - you can try installing them with apt/brew.
+Skills with available="false" may be disabled by the user or need dependencies installed first.
+Skills marked with <disabled/> were intentionally disabled and should not be used.
 
 {skills_summary}""")
 

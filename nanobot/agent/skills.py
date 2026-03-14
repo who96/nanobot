@@ -28,7 +28,8 @@ class SkillsLoader:
         List all available skills.
 
         Args:
-            filter_unavailable: If True, filter out skills with unmet requirements.
+            filter_unavailable: If True, filter out disabled skills and those
+                with unmet requirements.
 
         Returns:
             List of skill info dicts with 'name', 'path', 'source'.
@@ -51,11 +52,12 @@ class SkillsLoader:
                     if skill_file.exists() and not any(s["name"] == skill_dir.name for s in skills):
                         skills.append({"name": skill_dir.name, "path": str(skill_file), "source": "builtin"})
 
-        # Filter by requirements
+        # Filter by requirements and enabled state
         if filter_unavailable:
             return [
                 s for s in skills
-                if self._is_skill_enabled(s["name"]) and self._check_requirements(self._get_skill_meta(s["name"]))
+                if self._is_skill_enabled(self.get_skill_metadata(s["name"]) or {})
+                and self._check_requirements(self._get_skill_meta(s["name"]))
             ]
         return skills
 
@@ -124,7 +126,8 @@ class SkillsLoader:
             path = s["path"]
             desc = escape_xml(self._get_skill_description(s["name"]))
             skill_meta = self._get_skill_meta(s["name"])
-            enabled = self._is_skill_enabled(s["name"])
+            raw_meta = self.get_skill_metadata(s["name"]) or {}
+            enabled = self._is_skill_enabled(raw_meta)
             available = enabled and self._check_requirements(skill_meta)
 
             lines.append(f"  <skill available=\"{str(available).lower()}\">")
@@ -191,11 +194,16 @@ class SkillsLoader:
                 return False
         return True
 
-    def _is_skill_enabled(self, name: str) -> bool:
-        """Check if a skill is enabled (defaults to True for backward compat)."""
-        meta = self.get_skill_metadata(name) or {}
-        enabled = meta.get("enabled", "true")
-        return str(enabled).lower().strip() != "false"
+    def _is_skill_enabled(self, meta: dict) -> bool:
+        """Check if a skill is enabled (defaults to True for backward compat).
+
+        Accepts the full metadata dict rather than a skill name to avoid
+        redundant file reads.
+        """
+        enabled = meta.get("enabled", True)
+        if isinstance(enabled, bool):
+            return enabled
+        return str(enabled).lower().strip() not in ("false", "0", "no", "off")
 
     def _get_skill_meta(self, name: str) -> dict:
         """Get nanobot metadata for a skill (cached in frontmatter)."""

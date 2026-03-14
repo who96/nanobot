@@ -19,6 +19,7 @@ ALLOWED_FRONTMATTER_KEYS = {
     "description",
     "metadata",
     "always",
+    "enabled",
     "license",
     "allowed-tools",
 }
@@ -186,6 +187,10 @@ def validate_skill(skill_path):
     always = frontmatter.get("always")
     if always is not None and not isinstance(always, bool):
         return False, f"'always' must be a boolean, got {type(always).__name__}"
+
+    enabled = frontmatter.get("enabled")
+    if enabled is not None and not isinstance(enabled, bool):
+        return False, f"'enabled' must be a boolean, got {type(enabled).__name__}"
 
     for child in skill_path.iterdir():
         if child.name == "SKILL.md":
