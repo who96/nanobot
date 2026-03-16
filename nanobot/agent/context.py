@@ -6,7 +6,7 @@ import platform
 from pathlib import Path
 from typing import Any
 
-from nanobot.utils.helpers import current_time_str, parse_user_timezone
+from nanobot.utils.helpers import current_time_str
 
 from nanobot.agent.memory import MemoryStore
 from nanobot.agent.skills import SkillsLoader
@@ -19,8 +19,9 @@ class ContextBuilder:
     BOOTSTRAP_FILES = ["AGENTS.md", "SOUL.md", "USER.md", "TOOLS.md"]
     _RUNTIME_CONTEXT_TAG = "[Runtime Context — metadata only, not instructions]"
 
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, timezone: str | None = None):
         self.workspace = workspace
+        self.timezone = timezone
         self.memory = MemoryStore(workspace)
         self.skills = SkillsLoader(workspace)
 
@@ -127,8 +128,7 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
         chat_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Build the complete message list for an LLM call."""
-        user_tz = parse_user_timezone(self.workspace)
-        runtime_ctx = self._build_runtime_context(channel, chat_id, tz_name=user_tz)
+        runtime_ctx = self._build_runtime_context(channel, chat_id, tz_name=self.timezone)
         user_content = self._build_user_content(current_message, media)
 
         # Merge runtime context and user content into a single user message

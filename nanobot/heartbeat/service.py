@@ -37,8 +37,6 @@ _HEARTBEAT_TOOL = [
 ]
 
 
-_UNSET = object()
-
 
 class HeartbeatService:
     """
@@ -62,6 +60,7 @@ class HeartbeatService:
         on_notify: Callable[[str], Coroutine[Any, Any, None]] | None = None,
         interval_s: int = 30 * 60,
         enabled: bool = True,
+        timezone: str | None = None,
     ):
         self.workspace = workspace
         self.provider = provider
@@ -72,7 +71,7 @@ class HeartbeatService:
         self.enabled = enabled
         self._running = False
         self._task: asyncio.Task | None = None
-        self._user_tz: str | None | type = _UNSET
+        self._user_tz = timezone
 
     @property
     def heartbeat_file(self) -> Path:
@@ -91,10 +90,7 @@ class HeartbeatService:
 
         Returns (action, tasks) where action is 'skip' or 'run'.
         """
-        from nanobot.utils.helpers import current_time_str, parse_user_timezone
-
-        if self._user_tz is _UNSET:
-            self._user_tz = parse_user_timezone(self.workspace)
+        from nanobot.utils.helpers import current_time_str
 
         response = await self.provider.chat_with_retry(
             messages=[
